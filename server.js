@@ -3,40 +3,51 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 10000;
 
+// הגדרת נתיב נוכחי לתמיכה ב-ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// שימוש ב-cors ו-body parser
 app.use(cors());
 app.use(bodyParser.json());
+
+// הגשת קבצים סטטיים מתיקיית public
+app.use(express.static(path.join(__dirname, 'public')));
+
+// הגדרת דף הבית
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const assistantId = 'asst_ZgxJ4r5Mv4a0adF99CnVPZnW'; // שימי פה את ה-ID שלך
+const assistantId = 'asst_ZgxJ4r5Mv4a0adF99CnVPZnW';
 
 app.post('/api/generate', async (req, res) => {
   const userInput = req.body.prompt;
 
   try {
-    // שלב 1: יצירת thread חדש
     const thread = await openai.beta.threads.create();
 
-    // שלב 2: שליחת ההודעה לתוך thread
     await openai.beta.threads.messages.create(thread.id, {
       role: 'user',
       content: userInput,
     });
 
-    // שלב 3: הפעלת assistant עם ה-thread
     const run = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: assistantId,
     });
 
-    // שלב 4: המתנה לסיום ההרצה
     let runStatus;
     do {
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -47,7 +58,6 @@ app.post('/api/generate', async (req, res) => {
       throw new Error('Assistant failed to generate response');
     }
 
-    // שלב 5: שליפת התגובה
     const messages = await openai.beta.threads.messages.list(thread.id);
     const lastMessage = messages.data.find(msg => msg.role === 'assistant');
 
