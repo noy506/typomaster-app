@@ -107,13 +107,11 @@
     const input = document.getElementById('prompt');
     const chat = document.getElementById('chat');
 
-    // שינוי כיוון שפה לפי הקלט
     input.addEventListener('input', () => {
       const firstChar = input.value.trim()[0];
       input.dir = /[\u0590-\u05FF]/.test(firstChar) ? 'rtl' : 'ltr';
     });
 
-    // שליחת הודעה
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const userText = input.value.trim();
@@ -122,26 +120,16 @@
       addBubble(userText, 'user');
       input.value = '';
 
-      const iframe = document.createElement('iframe');
-      iframe.className = 'anim-container';
-      chat.appendChild(iframe);
-
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: userText }),
       });
-      const html = await response.text();
-      iframe.srcdoc = html;
 
-      setTimeout(() => {
-        iframe.remove();
-        const bubble = addBubble(stripHTML(html), 'assistant');
-        bubble.onclick = () => replayAnimation(html);
-      }, 6000); // כמה שניות לפני שמופיעה בועה רגילה
+      const html = await response.text();
+      renderTypoMasterResponse(html);
     });
 
-    // הוספת בועה רגילה
     function addBubble(text, role) {
       const div = document.createElement('div');
       div.className = 'bubble ' + role;
@@ -151,20 +139,41 @@
       return div;
     }
 
-    // הסרת תגיות HTML
     function stripHTML(html) {
       const tmp = document.createElement('div');
       tmp.innerHTML = html;
       return tmp.textContent || tmp.innerText || '';
     }
 
-    // הצגת אנימציה מחדש בלחיצה
-    function replayAnimation(html) {
+    function renderTypoMasterResponse(html) {
+      const cleanText = stripHTML(html);
+      const charCount = cleanText.length;
+      const estimatedDuration = Math.max(1500, charCount * 50);
+
+      // הצגת האנימציה
       const iframe = document.createElement('iframe');
       iframe.className = 'anim-container';
-      chat.appendChild(iframe);
       iframe.srcdoc = html;
-      setTimeout(() => iframe.remove(), 6000);
+      chat.appendChild(iframe);
+      chat.scrollTop = chat.scrollHeight;
+
+      // לאחר הדיליי – מחליף לבועה
+      setTimeout(() => {
+        iframe.remove();
+        const bubble = addBubble(cleanText, 'assistant');
+
+        bubble.style.cursor = 'pointer';
+        bubble.title = 'לחצי כדי לראות שוב את האנימציה';
+        bubble.onclick = () => {
+          const replayIframe = document.createElement('iframe');
+          replayIframe.className = 'anim-container';
+          replayIframe.srcdoc = html;
+          chat.appendChild(replayIframe);
+          chat.scrollTop = chat.scrollHeight;
+
+          setTimeout(() => replayIframe.remove(), estimatedDuration);
+        };
+      }, estimatedDuration);
     }
   </script>
 
