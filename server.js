@@ -31,7 +31,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const assistantId = 'asst_ZgxJ4r5Mv4a0adF99CnVPZnW';
+const assistantId = 'asst_aNEUaNGKxWciuqaLdLnB7K73';
 
 app.post('/api/generate', async (req, res) => {
   const userInput = req.body.prompt;
@@ -71,3 +71,4 @@ app.post('/api/generate', async (req, res) => {
 app.listen(port, () => {
   console.log(`TypoMaster server is running on port ${port}`);
 });
+
